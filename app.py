@@ -112,56 +112,56 @@ with tab1:
                     st.write(", ".join(clean_kws) if clean_kws else "ไม่พบคำสำคัญ")
 
 # ====== TAB 2: อัปโหลดไฟล์ Excel ======
-#with tab2:
-    st.header("อัปโหลดไฟล์เพื่อประมวลผลทั้งหมด")
-    st.info("💡 ไฟล์ Excel ต้นฉบับต้องมีคอลัมน์ชื่อ 'Question' และ 'Answer'")
+# with tab2:
+#     st.header("อัปโหลดไฟล์เพื่อประมวลผลทั้งหมด")
+#     st.info("💡 ไฟล์ Excel ต้นฉบับต้องมีคอลัมน์ชื่อ 'Question' และ 'Answer'")
    
-    uploaded_file = st.file_uploader("ลากไฟล์ Excel (.xlsx) มาวางที่นี่", type=['xlsx'])
+#     uploaded_file = st.file_uploader("ลากไฟล์ Excel (.xlsx) มาวางที่นี่", type=['xlsx'])
     
-    if uploaded_file is not None:
-        # อ่านไฟล์มาแล้วกวาดล้างคอลัมน์ขยะทิ้งทันที
-        df = pd.read_excel(uploaded_file)
-        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
-        st.write(f"พบข้อมูลทั้งหมด **{len(df)}** รายการ")
+#     if uploaded_file is not None:
+#         # อ่านไฟล์มาแล้วกวาดล้างคอลัมน์ขยะทิ้งทันที
+#         df = pd.read_excel(uploaded_file)
+#         df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+#         st.write(f"พบข้อมูลทั้งหมด **{len(df)}** รายการ")
         
-        if st.button("🚀 เริ่มประมวลข้อมูลทั้งหมด", type="primary", key="batch_btn"):
-            progress_bar = st.progress(0)
-            status_text = st.empty()
+#         if st.button("🚀 เริ่มประมวลข้อมูลทั้งหมด", type="primary", key="batch_btn"):
+#             progress_bar = st.progress(0)
+#             status_text = st.empty()
            
-            all_cats, all_kws = [], []
+#             all_cats, all_kws = [], []
             
-            for i, row in df.iterrows():
-                status_text.text(f"กำลังประมวลผลรายการที่ {i+1} / {len(df)}...")
-                cat, kws = process_faq(row.get('Question', ''), row.get('Answer', ''))
-                all_cats.append(cat)
-                all_kws.append(kws)
-                progress_bar.progress((i + 1) / len(df))
-                time.sleep(0.5) 
+#             for i, row in df.iterrows():
+#                 status_text.text(f"กำลังประมวลผลรายการที่ {i+1} / {len(df)}...")
+#                 cat, kws = process_faq(row.get('Question', ''), row.get('Answer', ''))
+#                 all_cats.append(cat)
+#                 all_kws.append(kws)
+#                 progress_bar.progress((i + 1) / len(df))
+#                 time.sleep(0.5) 
             
-            # --- 🛡️ วิธีใหม่: ใส่ข้อมูลลงใน DF เดิมแบบคลีนๆ ---
-            final_df = df.copy()
+#             # --- 🛡️ วิธีใหม่: ใส่ข้อมูลลงใน DF เดิมแบบคลีนๆ ---
+#             final_df = df.copy()
            
-            # ลบคอลัมน์เก่าออกก่อนถ้ามี (ป้องกันคอลัมน์เบิ้ล)
-            cols_to_drop = ['Predicted_Category'] + [f"Keyword-{i+1}" for i in range(10)]
-            final_df = final_df.drop(columns=[c for c in cols_to_drop if c in final_df.columns])
+#             # ลบคอลัมน์เก่าออกก่อนถ้ามี (ป้องกันคอลัมน์เบิ้ล)
+#             cols_to_drop = ['Predicted_Category'] + [f"Keyword-{i+1}" for i in range(10)]
+#             final_df = final_df.drop(columns=[c for c in cols_to_drop if c in final_df.columns])
            
-            # แปะข้อมูลใหม่
-            final_df['Predicted_Category'] = all_cats
-            kw_df = pd.DataFrame(all_kws, columns=[f"Keyword-{i+1}" for i in range(10)], index=final_df.index)
-            final_df = pd.concat([final_df, kw_df], axis=1)
+#             # แปะข้อมูลใหม่
+#             final_df['Predicted_Category'] = all_cats
+#             kw_df = pd.DataFrame(all_kws, columns=[f"Keyword-{i+1}" for i in range(10)], index=final_df.index)
+#             final_df = pd.concat([final_df, kw_df], axis=1)
 
-            status_text.text("✅ ประมวลผลเสร็จสมบูรณ์!")
-            st.dataframe(final_df.head(5)) 
+#             status_text.text("✅ ประมวลผลเสร็จสมบูรณ์!")
+#             st.dataframe(final_df.head(5)) 
            
-            # --- 🌟 ส่วนที่แก้ไข: Export เป็น Excel แบบใหม่ที่ชัวร์กว่าเดิม ---
-            output = io.BytesIO()
-            # เขียนลง BytesIO โดยตรง ไม่ต้องผ่าน Context Manager (with...)
-            final_df.to_excel(output, index=False, engine='openpyxl', sheet_name='FAQ_Results')
-            processed_data = output.getvalue()
+#             # --- 🌟 ส่วนที่แก้ไข: Export เป็น Excel แบบใหม่ที่ชัวร์กว่าเดิม ---
+#             output = io.BytesIO()
+#             # เขียนลง BytesIO โดยตรง ไม่ต้องผ่าน Context Manager (with...)
+#             final_df.to_excel(output, index=False, engine='openpyxl', sheet_name='FAQ_Results')
+#             processed_data = output.getvalue()
            
-            st.download_button(
-                label="⬇️ ดาวน์โหลดไฟล์ผลลัพธ์ (Excel)",
-                data=processed_data,
-                file_name="faq_result_typhoon.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+#             st.download_button(
+#                 label="⬇️ ดาวน์โหลดไฟล์ผลลัพธ์ (Excel)",
+#                 data=processed_data,
+#                 file_name="faq_result_typhoon.xlsx",
+#                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+#             )
