@@ -34,7 +34,7 @@ except KeyError:
 # --- 4. สมองกล AI ---
 def process_faq(question, answer):
     if pd.isna(question) and pd.isna(answer):
-        return "ไม่ระบุ", [None] * 7
+        return "ไม่ระบุ", [None] * 10
      
 
     prompt = f"""อ่านข้อความคำถามและคำตอบ FAQ ด้านล่าง แล้วทำหน้าที่ 2 อย่างคือ:
