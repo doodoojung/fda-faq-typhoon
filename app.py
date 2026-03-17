@@ -60,7 +60,7 @@ def process_faq(question, answer):
       
         ai_output = response.choices[0].message.content
         category_result = "ไม่ระบุ"
-        keywords_result = [None] * 7
+        keywords_result = [None] * 10
        
         for line in ai_output.split('\n'):
             line = line.strip()
@@ -70,12 +70,12 @@ def process_faq(question, answer):
             elif line.startswith("คำสำคัญ:"):
                 raw_kws = line.replace("คำสำคัญ:", "").strip()
                 words = [re.sub(r'[^\w\sก-๙]', '', w.strip()) for w in raw_kws.split(',') if w.strip()]
-                while len(words) < 7: words.append(None)
-                keywords_result = words[:7]
+                while len(words) < 10: words.append(None)
+                keywords_result = words[:10]
                
         return category_result, keywords_result
     except Exception as e:
-        return f"Error: {str(e)}", [None] * 7
+        return f"Error: {str(e)}", [None] * 10
 
 # --- 5. แถบตั้งค่าด้านข้าง (Sidebar) ---
 with st.sidebar:
@@ -142,16 +142,16 @@ with tab2:
             final_df = df.copy()
            
             # ลบคอลัมน์เก่าออกก่อนถ้ามี (ป้องกันคอลัมน์เบิ้ล)
-            cols_to_drop = ['Predicted_Category'] + [f"Keyword-{i+1}" for i in range(7)]
+            cols_to_drop = ['Predicted_Category'] + [f"Keyword-{i+1}" for i in range(10)]
             final_df = final_df.drop(columns=[c for c in cols_to_drop if c in final_df.columns])
            
             # แปะข้อมูลใหม่
             final_df['Predicted_Category'] = all_cats
-            kw_df = pd.DataFrame(all_kws, columns=[f"Keyword-{i+1}" for i in range(7)], index=final_df.index)
+            kw_df = pd.DataFrame(all_kws, columns=[f"Keyword-{i+1}" for i in range(10)], index=final_df.index)
             final_df = pd.concat([final_df, kw_df], axis=1)
 
             status_text.text("✅ ประมวลผลเสร็จสมบูรณ์!")
-            st.dataframe(final_df.head(10)) 
+            st.dataframe(final_df.head(5)) 
            
             # --- 🌟 ส่วนที่แก้ไข: Export เป็น Excel แบบใหม่ที่ชัวร์กว่าเดิม ---
             output = io.BytesIO()
