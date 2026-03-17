@@ -143,23 +143,22 @@ with tab2:
             # --- 🛡️ วิธีใหม่: ใส่ข้อมูลลงใน DF เดิมแบบคลีนๆ ---
             final_df = df.copy()
             
-            # ลบคอลัมน์ที่ชื่อซ้ำกับสิ่งที่เรากำลังจะใส่ (กันเหนียว)
+            # ลบคอลัมน์เก่าออกก่อนถ้ามี (ป้องกันคอลัมน์เบิ้ล)
             cols_to_drop = ['Predicted_Category'] + [f"Keyword-{i+1}" for i in range(7)]
             final_df = final_df.drop(columns=[c for c in cols_to_drop if c in final_df.columns])
             
-            # แปะข้อมูลใหม่ลงไปตรงๆ
+            # แปะข้อมูลใหม่
             final_df['Predicted_Category'] = all_cats
-            for i in range(7):
-                # ดึง Keyword แต่ละตำแหน่งมาใส่ทีละคอลัมน์
-                final_df[f"Keyword-{i+1}"] = [k[i] if i < len(k) else None for k in all_kws]
+            kw_df = pd.DataFrame(all_kws, columns=[f"Keyword-{i+1}" for i in range(7)], index=final_df.index)
+            final_df = pd.concat([final_df, kw_df], axis=1)
 
             status_text.text("✅ ประมวลผลเสร็จสมบูรณ์!")
             st.dataframe(final_df.head(10)) 
             
-            # --- 🌟 เปลี่ยนมา Export เป็น Excel (.xlsx) เพื่อความเป๊ะ ---
+            # --- 🌟 ส่วนที่แก้ไข: Export เป็น Excel แบบใหม่ที่ชัวร์กว่าเดิม ---
             output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                final_df.to_excel(writer, index=False, sheet_name='FAQ_Results')
+            # เขียนลง BytesIO โดยตรง ไม่ต้องผ่าน Context Manager (with...)
+            final_df.to_excel(output, index=False, engine='openpyxl', sheet_name='FAQ_Results')
             processed_data = output.getvalue()
             
             st.download_button(
