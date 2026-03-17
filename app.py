@@ -120,7 +120,9 @@ with tab2:
     uploaded_file = st.file_uploader("ลากไฟล์ Excel (.xlsx) มาวางที่นี่", type=['xlsx'])
     
     if uploaded_file is not None:
+        # อ่านไฟล์และจัดการคอลัมน์ Unnamed เบื้องต้น
         df = pd.read_excel(uploaded_file)
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
         st.write(f"พบข้อมูลทั้งหมด **{len(df)}** รายการ")
         
         if st.button("🚀 เริ่มรันข้อมูลทั้งหมด", type="primary", key="batch_btn"):
@@ -129,6 +131,7 @@ with tab2:
             
             all_cats, all_kws = [], []
             
+            # วนลูปประมวลผล
             for i, row in df.iterrows():
                 status_text.text(f"กำลังประมวลผลรายการที่ {i+1} / {len(df)}...")
                 
@@ -139,13 +142,31 @@ with tab2:
                 progress_bar.progress((i + 1) / len(df))
                 time.sleep(0.5) 
             
-            df['Predicted_Category'] = all_cats
-            kw_df = pd.DataFrame(all_kws, columns=[f"Keyword-{i+1}" for i in range(7)])
-            final_df = pd.concat([df, kw_df], axis=1)
+            # --- 🛡️ ส่วนการจัดการข้อมูลเพื่อป้องกัน Column Duplicate ---
+            
+            # 1. กำหนดชื่อคอลัมน์ที่เราจะสร้างใหม่
+            kw_cols = [f"Keyword-{i+1}" for i in range(7)]
+            target_cols = ['Predicted_Category'] + kw_cols
+            
+            # 2. ลบคอลัมน์ที่มีชื่อตรงกับเป้าหมายออกไปก่อน (ถ้ามีในไฟล์เดิม)
+            df_cleaned = df.drop(columns=[c for c in target_cols if c in df.columns])
+            
+            # 3. เตรียม Dataframe คีย์เวิร์ดใหม่
+            kw_df = pd.DataFrame(all_kws, columns=kw_cols, index=df_cleaned.index)
+            
+            # 4. ประกอบร่าง
+            df_cleaned['Predicted_Category'] = all_cats
+            final_df = pd.concat([df_cleaned, kw_df], axis=1)
+            
+            # 5. กวาดล้างชื่อซ้ำรอบสุดท้าย (ถ้ามีคอลัมน์อื่นซ้ำกันเป๊ะๆ)
+            final_df = final_df.loc[:, ~final_df.columns.duplicated()]
             
             status_text.text("✅ ประมวลผลเสร็จสมบูรณ์!")
+            
+            # แสดงผล 10 แถวแรก
             st.dataframe(final_df.head(10)) 
             
+            # สร้างปุ่มดาวน์โหลด
             csv = final_df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
             st.download_button(
                 label="⬇️ ดาวน์โหลดไฟล์ผลลัพธ์ (CSV)",
