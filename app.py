@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import time
 import re
-import json
 from openai import OpenAI
 
 # --- 1. ตั้งค่าหน้าเพจ ---
@@ -24,65 +23,52 @@ except KeyError:
     st.stop() # หยุดทำงานถ้าไม่มีกุญแจ
 
 # --- 4. สมองกล AI ---
-@st.cache_data(show_spinner=False)
 def process_faq(question, answer):
     if pd.isna(question) and pd.isna(answer):
         return "ไม่ระบุ", [None] * 7
         
-    # ปรับ Prompt ใหม่ สั่งให้ตอบเป็น JSON เท่านั้น
-    prompt = f"""คุณคือระบบสกัดข้อมูล FAQ สรุปเนื้อหาให้อยู่ในรูปแบบ JSON เท่านั้น โดยมีโครงสร้างดังนี้:
-{{
-  "category": "เลือกจาก {CATEGORY_LIST}",
-  "keywords": ["คำที่ 1", "คำที่ 2", ..., "คำที่ 7"]
-}}
+    prompt = f"""อ่านข้อความคำถามและคำตอบ FAQ ด้านล่าง แล้วทำหน้าที่ 2 อย่างคือ:
+1. จัดหมวดหมู่: เลือก 1 หมวดหมู่ที่ตรงที่สุดจากรายการนี้เท่านั้น {CATEGORY_LIST}
+2. สกัดคำสำคัญ: ดึงคำนามหรือศัพท์เทคนิคทางเภสัชกรรมที่สำคัญที่สุด ไม่เกิน 7 คำ (คั่นด้วยเครื่องหมายจุลภาค)
 
 ข้อความ FAQ:
 คำถาม: {question}
 คำตอบ: {answer}
 
-เงื่อนไข:
-1. ตอบเป็น JSON Object เท่านั้น ห้ามมีคำอธิบายอื่น
-2.Keywords ต้องเป็นคำนามหรือศัพท์เทคนิคทางเภสัชกรรม ห้ามใช้คำกริยา"""
+บังคับรูปแบบการตอบ (ห้ามมีคำอธิบายหรือคำเกริ่นนำใดๆ ตอบตามรูปแบบด้านล่างนี้เท่านั้น):
+หมวดหมู่: [ชื่อหมวดหมู่ที่เลือก]
+คำสำคัญ: [คำที่ 1], [คำที่ 2], [คำที่ 3]"""
 
     try:
         client = OpenAI(api_key=api_key, base_url="https://api.opentyphoon.ai/v1")
         response = client.chat.completions.create(
             model="typhoon-v2.5-30b-a3b-instruct", 
             messages=[
-                {"role": "system", "content": "คุณคือ JSON Generator ที่ทำงานแม่นยำที่สุด ตอบเฉพาะ JSON เท่านั้น"}
+                {"role": "system", "content": "คุณคือผู้เชี่ยวชาญด้านการจัดหมวดหมู่ข้อมูลและสกัดคำศัพท์เฉพาะทาง"},
+                {"role": "user", "content": prompt}
             ],
-            temperature=0.01,
-            max_tokens=2048,
-            # 🌟 เพิ่มคำสั่งบอก API ว่าเราต้องการผลลัพธ์แบบ JSON
-            response_format={ "type": "json_object" } 
+            temperature=0.01
+            max_tokens=2048
         )
         
-        # ดึงข้อความดิบมาแกะด้วย JSON
-        raw_content = response.choices[0].message.content
-        data = json.loads(raw_content) # แกะกล่อง JSON
+        ai_output = response.choices[0].message.content
+        category_result = "ไม่ระบุ"
+        keywords_result = [None] * 7
         
-        # ดึงค่าออกมาใช้งาน
-        category_result = data.get("category", "ไม่ระบุ")
-        keywords_result = data.get("keywords", [])
-        
-        # ตรวจสอบความถูกต้องของหมวดหมู่ (ดักคอ AI)
-        if category_result not in CATEGORY_LIST:
-            # ถ้า AI ตอบชื่อหมวดหมู่ใกล้เคียงแต่ไม่เป๊ะ ให้พยายามหาคำที่ตรงที่สุด
-            for cat in CATEGORY_LIST:
-                if cat in category_result:
-                    category_result = cat
-                    break
-        
-        # ทำความสะอาดคีย์เวิร์ด
-        keywords_result = [re.sub(r'[^\w\sก-๙]', '', str(w).strip()) for w in keywords_result if w]
-        while len(keywords_result) < 7:
-            keywords_result.append(None)
-            
-        return category_result, keywords_result[:7]
-
+        for line in ai_output.split('\n'):
+            line = line.strip()
+            if line.startswith("หมวดหมู่:"):
+                cat = line.replace("หมวดหมู่:", "").strip()
+                if any(c in cat for c in CATEGORY_LIST): category_result = cat
+            elif line.startswith("คำสำคัญ:"):
+                raw_kws = line.replace("คำสำคัญ:", "").strip()
+                words = [re.sub(r'[^\w\sก-๙]', '', w.strip()) for w in raw_kws.split(',') if w.strip()]
+                while len(words) < 7: words.append(None)
+                keywords_result = words[:7]
+                
+        return category_result, keywords_result
     except Exception as e:
-        # 🚨 ถ้าแกะ JSON พลาด (ซึ่งโอกาสน้อยมากในรุ่น 30B) ให้โชว์ Error จริงๆ ออกมาดู
-        return f"🚨 Error: {str(e)}", [None] * 7
+        return f"Error: {str(e)}", [None] * 7
 
 # --- 5. แถบตั้งค่าด้านข้าง (Sidebar) ---
 with st.sidebar:
