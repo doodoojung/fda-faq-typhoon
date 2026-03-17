@@ -68,6 +68,10 @@ def process_faq(question, answer):
                 words = [re.sub(r'[^\w\sก-๙]', '', w.strip()) for w in raw_kws.split(',') if w.strip()]
                 while len(words) < 7: words.append(None)
                 keywords_result = words[:7]
+        
+        # 🌟 โหมดนักสืบ: ถ้าหาหมวดหมู่ไม่เจอ ให้พ่นคำตอบดิบๆ ของ AI ออกมาดูเลย!
+        if category_result == "ไม่ระบุ":
+            category_result = f"🚨 โหมดนักสืบ: {ai_output}"
                 
         return category_result, keywords_result
     except Exception as e:
