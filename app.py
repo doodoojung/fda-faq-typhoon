@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import time
 import re
+import io
 from openai import OpenAI
 
 # --- 1. ตั้งค่าหน้าเพจ ---
@@ -120,7 +121,7 @@ with tab2:
     uploaded_file = st.file_uploader("ลากไฟล์ Excel (.xlsx) มาวางที่นี่", type=['xlsx'])
     
     if uploaded_file is not None:
-        # อ่านไฟล์และจัดการคอลัมน์ Unnamed เบื้องต้น
+        # อ่านไฟล์มาแล้วกวาดล้างคอลัมน์ขยะทิ้งทันที
         df = pd.read_excel(uploaded_file)
         df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
         st.write(f"พบข้อมูลทั้งหมด **{len(df)}** รายการ")
@@ -131,46 +132,39 @@ with tab2:
             
             all_cats, all_kws = [], []
             
-            # วนลูปประมวลผล
             for i, row in df.iterrows():
                 status_text.text(f"กำลังประมวลผลรายการที่ {i+1} / {len(df)}...")
-                
                 cat, kws = process_faq(row.get('Question', ''), row.get('Answer', ''))
                 all_cats.append(cat)
                 all_kws.append(kws)
-                
                 progress_bar.progress((i + 1) / len(df))
                 time.sleep(0.5) 
             
-            # --- 🛡️ ส่วนการจัดการข้อมูลเพื่อป้องกัน Column Duplicate ---
+            # --- 🛡️ วิธีใหม่: ใส่ข้อมูลลงใน DF เดิมแบบคลีนๆ ---
+            final_df = df.copy()
             
-            # 1. กำหนดชื่อคอลัมน์ที่เราจะสร้างใหม่
-            kw_cols = [f"Keyword-{i+1}" for i in range(7)]
-            target_cols = ['Predicted_Category'] + kw_cols
+            # ลบคอลัมน์ที่ชื่อซ้ำกับสิ่งที่เรากำลังจะใส่ (กันเหนียว)
+            cols_to_drop = ['Predicted_Category'] + [f"Keyword-{i+1}" for i in range(7)]
+            final_df = final_df.drop(columns=[c for c in cols_to_drop if c in final_df.columns])
             
-            # 2. ลบคอลัมน์ที่มีชื่อตรงกับเป้าหมายออกไปก่อน (ถ้ามีในไฟล์เดิม)
-            df_cleaned = df.drop(columns=[c for c in target_cols if c in df.columns])
-            
-            # 3. เตรียม Dataframe คีย์เวิร์ดใหม่
-            kw_df = pd.DataFrame(all_kws, columns=kw_cols, index=df_cleaned.index)
-            
-            # 4. ประกอบร่าง
-            df_cleaned['Predicted_Category'] = all_cats
-            final_df = pd.concat([df_cleaned, kw_df], axis=1)
-            
-            # 5. กวาดล้างชื่อซ้ำรอบสุดท้าย (ถ้ามีคอลัมน์อื่นซ้ำกันเป๊ะๆ)
-            final_df = final_df.loc[:, ~final_df.columns.duplicated()]
-            
+            # แปะข้อมูลใหม่ลงไปตรงๆ
+            final_df['Predicted_Category'] = all_cats
+            for i in range(7):
+                # ดึง Keyword แต่ละตำแหน่งมาใส่ทีละคอลัมน์
+                final_df[f"Keyword-{i+1}"] = [k[i] if i < len(k) else None for k in all_kws]
+
             status_text.text("✅ ประมวลผลเสร็จสมบูรณ์!")
-            
-            # แสดงผล 10 แถวแรก
             st.dataframe(final_df.head(10)) 
             
-            # สร้างปุ่มดาวน์โหลด
-            csv = final_df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
+            # --- 🌟 เปลี่ยนมา Export เป็น Excel (.xlsx) เพื่อความเป๊ะ ---
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                final_df.to_excel(writer, index=False, sheet_name='FAQ_Results')
+            processed_data = output.getvalue()
+            
             st.download_button(
-                label="⬇️ ดาวน์โหลดไฟล์ผลลัพธ์ (CSV)",
-                data=csv,
-                file_name="faq_result_typhoon.csv",
-                mime="text/csv",
+                label="⬇️ ดาวน์โหลดไฟล์ผลลัพธ์ (Excel)",
+                data=processed_data,
+                file_name="faq_result_typhoon.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
