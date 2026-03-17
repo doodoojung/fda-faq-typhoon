@@ -48,7 +48,7 @@ def process_faq(question, answer):
                 {"role": "user", "content": prompt}
             ],
             temperature=0.1,
-            max_tokens=1000
+            max_tokens=2048
         )
         
         ai_output = response.choices[0].message.content
