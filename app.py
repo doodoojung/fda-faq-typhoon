@@ -142,7 +142,7 @@ with tab2:
         if 'Question' not in cols or 'Answer' not in cols:
             st.error("❌ ไม่พบคอลัมน์ 'Question' หรือ 'Answer' ในไฟล์")
         else:
-            if st.button("🚀 เริ่มรันข้อมูลทั้งหมด", type="primary"):
+            if st.button("🚀 เริ่มประมวลข้อมูลทั้งหมด", type="primary"):
                 all_cats, all_kws = [], []
                 p_bar = st.progress(0)
                 status = st.empty()
