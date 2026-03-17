@@ -112,7 +112,7 @@ with tab1:
                     st.write(", ".join(clean_kws) if clean_kws else "ไม่พบคำสำคัญ")
 
 # ====== TAB 2: อัปโหลดไฟล์ Excel ======
-with tab2:
+#with tab2:
     st.header("อัปโหลดไฟล์เพื่อประมวลผลทั้งหมด")
     st.info("💡 ไฟล์ Excel ต้นฉบับต้องมีคอลัมน์ชื่อ 'Question' และ 'Answer'")
    
