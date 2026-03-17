@@ -47,7 +47,7 @@ def process_faq(question, answer):
                 {"role": "system", "content": "คุณคือผู้เชี่ยวชาญด้านการจัดหมวดหมู่ข้อมูลและสกัดคำศัพท์เฉพาะทาง"},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.01
+            temperature=0.01,
             max_tokens=2048
         )
         
