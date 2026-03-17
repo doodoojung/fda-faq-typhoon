@@ -30,7 +30,7 @@ except KeyError:
         st.write(f"- {cat}")
 
 # --- 3. สมองกล AI (ฟังก์ชันหลัก) ---
-def process_faq(question, answer, api_key):
+def process_faq(question, answer, api_key, category_list):
     if pd.isna(question) and pd.isna(answer):
         return "ไม่ระบุ", [None] * 7
         
@@ -93,7 +93,7 @@ with tab1:
             st.warning("⚠️ กรุณากรอกข้อมูลคำถามหรือคำตอบ")
         else:
             with st.spinner("กำลังให้ AI วิเคราะห์ข้อมูล..."):
-                cat, kws = process_faq(q_input, a_input, api_key)
+                cat, kws = process_faq(q_input, a_input, api_key, category_list)
                 st.success("ประมวลผลสำเร็จ!")
                 
                 col1, col2 = st.columns(2)
@@ -129,7 +129,7 @@ with tab2:
                 for i, row in df.iterrows():
                     status_text.text(f"กำลังประมวลผลรายการที่ {i+1} / {len(df)}...")
                     
-                    cat, kws = process_faq(row.get('Question', ''), row.get('Answer', ''), api_key)
+                    cat, kws = process_faq(row.get('Question', ''), row.get('Answer', ''), api_key, category_list)
                     all_cats.append(cat)
                     all_kws.append(kws)
                     
