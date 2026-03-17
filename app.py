@@ -47,7 +47,8 @@ def process_faq(question, answer):
                 {"role": "system", "content": "คุณคือผู้เชี่ยวชาญด้านการจัดหมวดหมู่ข้อมูลและสกัดคำศัพท์เฉพาะทาง"},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.1
+            temperature=0.1,
+            max_tokens=1000
         )
         
         ai_output = response.choices[0].message.content
