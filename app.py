@@ -42,7 +42,7 @@ def process_faq(question, answer):
     try:
         client = OpenAI(api_key=api_key, base_url="https://api.opentyphoon.ai/v1")
         response = client.chat.completions.create(
-            model="typhoon-v1.5x-70b-instruct", 
+            model="typhoon-v2.5-30b-a3b-instruct", 
             messages=[
                 {"role": "system", "content": "คุณคือผู้เชี่ยวชาญด้านการจัดหมวดหมู่ข้อมูลและสกัดคำศัพท์เฉพาะทาง"},
                 {"role": "user", "content": prompt}
