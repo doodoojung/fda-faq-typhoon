@@ -50,7 +50,7 @@ def process_faq(question, answer):
                 {"role": "system", "content": "คุณคือโปรแกรมสกัดข้อมูลอัตโนมัติ คุณทำงานแบบ Deterministic และปฏิบัติตามคำสั่ง Output Format อย่างเคร่งครัด"}
             ],
             # 🌟 ท่าไม้ตายล็อคผลลัพธ์อยู่ตรงนี้ค่ะ!
-            temperature=0.01,    # 0.0 = ห้ามมีความคิดสร้างสรรค์
+            temperature=0.1,    # 0.0 = ห้ามมีความคิดสร้างสรรค์
             max_tokens=2048
         )
         
